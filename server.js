@@ -1,6 +1,5 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -115,17 +114,6 @@ app.get('/script.js', (req, res) => {
     res.sendFile(path.join(__dirname, 'script.js'));
 });
 
-// Serve static files for all other routes (SPA support)
-app.get('*', (req, res) => {
-    // If it's an API route, return 404
-    if (req.path.startsWith('/api/')) {
-        return res.status(404).json({ error: 'API endpoint not found' });
-    }
-    
-    // Otherwise serve the main HTML file
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
 // VCF content generation function
 function generateVCFContent(data) {
     const vcf = `BEGIN:VCARD
@@ -146,6 +134,17 @@ function escapeVCF(text) {
     if (!text || text === 'Not provided') return '';
     return String(text).replace(/([;,\\])/g, '\\$1').replace(/\n/g, '\\n');
 }
+
+// Serve static files for all other routes (SPA support)
+app.get('*', (req, res) => {
+    // If it's an API route, return 404
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    
+    // Otherwise serve the main HTML file
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 // Error handling middleware
 app.use((error, req, res, next) => {
@@ -172,85 +171,4 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
     process.exit(1);
-});            success: true,
-            vcfContent: vcfContent,
-            filename: `${name.replace(/\s+/g, '_')}.vcf`
-        });
-
-    } catch (error) {
-        console.error('Error generating VCF:', error);
-        res.status(500).json({ 
-            error: 'Internal server error while generating VCF' 
-        });
-    }
-});
-
-// API endpoint to download VCF file
-app.get('/api/download-vcf', (req, res) => {
-    try {
-        const { name, group, time, phone, email } = req.query;
-
-        if (!name || !group || !time || !phone) {
-            return res.status(400).send('Missing required fields');
-        }
-
-        const vcfContent = generateVCFContent({
-            name: name.trim(),
-            group: group.trim(),
-            time: time.trim(),
-            phone: phone.trim(),
-            email: email ? email.trim() : 'Not provided'
-        });
-
-        const filename = `${name.replace(/\s+/g, '_')}.vcf`;
-
-        res.setHeader('Content-Type', 'text/vcard');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-        res.send(vcfContent);
-
-    } catch (error) {
-        console.error('Error downloading VCF:', error);
-        res.status(500).send('Error generating VCF file');
-    }
-});
-
-// Health check endpoint for Render
-app.get('/health', (req, res) => {
-    res.json({ 
-        status: 'OK', 
-        timestamp: new Date().toISOString(),
-        service: 'VCF Website Generator'
-    });
-});
-
-// Serve static files for all other routes (SPA support)
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// VCF content generation function
-function generateVCFContent(data) {
-    return `BEGIN:VCARD
-VERSION:3.0
-FN:${escapeVCF(data.name)}
-ORG:${escapeVCF(data.group)}
-TEL:${data.phone.replace(/\D/g, '')}
-EMAIL:${data.email !== 'Not provided' ? escapeVCF(data.email) : ''}
-NOTE:Preferred contact time: ${escapeVCF(data.time)}
-URL:${escapeVCF(req.headers.host)}
-REV:${new Date().toISOString()}
-END:VCARD`;
-}
-
-// Helper function to escape VCF special characters
-function escapeVCF(text) {
-    if (!text) return '';
-    return text.replace(/([;,\\])/g, '\\$1');
-}
-
-// Start server
-app.listen(PORT, () => {
-    console.log(`🚀 VCF Website Generator running on port ${PORT}`);
-    console.log(`📧 Visit: http://localhost:${PORT}`);
-    console.log(`❤️  Health check: http://localhost:${PORT}/health`);
 });

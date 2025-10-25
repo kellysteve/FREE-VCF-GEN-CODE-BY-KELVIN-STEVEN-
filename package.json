@@ -1,0 +1,16 @@
+{
+  "name": "vcf-website",
+  "version": "1.0.0",
+  "description": "VCF Website with WhatsApp integration",
+  "main": "index.html",
+  "scripts": {
+    "start": "serve -s .",
+    "build": "echo 'No build step required'"
+  },
+  "dependencies": {
+    "serve": "^14.2.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
